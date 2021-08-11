@@ -11,7 +11,7 @@ st.set_page_config(
 st.title('SNiPSoL 🔬')
 
 # st.header('Input file configuration')
-demo_file = pd.read_excel('./files/input.xlsx', dtype=str)
+demo_file = pd.read_excel('./files/mutiple sample input.xlsx', dtype=str)
 # st.dataframe(demo_file)
 
 towrite = io.BytesIO()
@@ -24,44 +24,46 @@ st.markdown(linko, unsafe_allow_html=True)
 uploaded_file = st.file_uploader("Choose a XLSX file", type="xlsx")
 placeholder = st.empty()
 
-# input = placeholder.text_input('text')
-# click_clear = st.button('clear text input', key='clear')
-# if click_clear:
-#     input = placeholder.text_input('text', value='clear')
-
 if uploaded_file:
-    idf = pd.read_excel(uploaded_file,  header=0, names=['position', 'value'], dtype=str)
-    dbdf = pd.read_excel('./files/db.xlsx',  header=None, dtype=str)
+    input_df = pd.read_excel(uploaded_file, header=None, dtype=str)
+    db_df = pd.read_excel('./files/sampledb.xlsx', header=None, dtype=str)
 
+    input_row, input_col = input_df.shape
+    db_row, db_col = db_df.shape
 
+    # st.dataframe(input_df)
+    # st.dataframe(db_df)
+    input = placeholder.text_input('Message', value="Processing this will take some time")
+    
 
-    dbrow, dbcol = dbdf.shape
-    # idrow, idcol = idf.shape
+    output = pd.DataFrame()
+    for input_col_index in range(1, input_col):
+        input_records = []
+        for input_row_index in range(1, input_row):
+            input_temp = {'position': input_df.iloc[input_row_index, 0], 'value': input_df.iloc[input_row_index, input_col_index]}
+            input_records.append(input_temp)
+            input_temp_df = pd.DataFrame.from_records(input_records)
+        # st.dataframe(input_temp_df)
+        # st.write("length", len(input_records))
+        
+        output_dict = {}
+        for db_col_index in range(1, db_col):
+            db_records = []
+            for db_row_index in range(1, db_row):
+                db_temp = {'position': db_df.iloc[db_row_index, 0], 'value': db_df.iloc[db_row_index, db_col_index]}
+                db_records.append(db_temp)
+            db_temp_df = pd.DataFrame.from_records(db_records)
+            df_diff = pd.concat([input_temp_df,db_temp_df]).drop_duplicates(keep=False)
+            diff_row, diff_col = df_diff.shape
+            output_dict[db_df.iloc[0, db_col_index]] = ((input_row-1 + db_row-1) - diff_row)/2
+        # st.write(output_dict)
+        output_dict[0] =  input_df.iloc[0, input_col_index]
+        output = output.append(output_dict, ignore_index=True, sort=True)
 
-    # st.dataframe(df)
-    # st.table(df)
-    output_dict = {}
-    input = placeholder.text_input('Iterating over this')
-
-    for i in range(18, dbcol):
-        records = []
-        for j in range(2, len(dbdf)):
-            temp = {'position': dbdf.iloc[j, 0], 'value': dbdf.iloc[j, i]}
-            records.append(temp)
-        temp_df = pd.DataFrame.from_records(records)
-        # st.dataframe(temp_df)
-        df_diff = pd.concat([idf,temp_df]).drop_duplicates(keep=False)
-        row, col = df_diff.shape
-        idf_row, idf_col = idf.shape
-        temp_row, temp_col = temp_df.shape
-        input = placeholder.text_input('Iterating over', value=dbdf.iloc[1, i])
-        # st.write("checking", dbdf.iloc[1, i])
-        output_dict[dbdf.iloc[0,i] + " " +  dbdf.iloc[1, i]] = ((idf_row + temp_row) - row)/2
-
-    # print(output_dict)
-    input = placeholder.text_input('Message', value='Render Complete')
-    dict_items = output_dict.items()
-    sorted_ans = sorted(dict_items, key = lambda kv: kv[1], reverse=True)
-    first_five = list(sorted_ans)[:5]
-    st.write('Top five matches are')
-    st.write(first_five)
+    input = placeholder.text_input('Message', value="Completed")
+    st.dataframe(output)
+    downloaded_file = output.to_excel(towrite, encoding='utf-8', index=False, header=True)
+    towrite.seek(0)  # reset pointer
+    b64 = base64.b64encode(towrite.read()).decode()  # some strings
+    linko= f'<a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{b64}" download="ans.xlsx">Download ans file</a>'
+    st.markdown(linko, unsafe_allow_html=True)
