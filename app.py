@@ -13,6 +13,7 @@ st.title('SNiPSoL 🔬')
 # st.header('Input file configuration')
 demo_file = pd.read_excel('./files/mutipleinput.xlsx', dtype=str)
 # st.dataframe(demo_file)
+db_df = pd.read_excel('./files/db.xlsx', header=None, dtype=str)
 
 towrite = io.BytesIO()
 downloaded_file = demo_file.to_excel(towrite, encoding='utf-8', index=False, header=True)
@@ -27,7 +28,7 @@ placeholder = st.empty()
 if uploaded_file:
     input = placeholder.text_input('Message', value="Processing, this will take some time")
     input_df = pd.read_excel(uploaded_file, header=None, dtype=str)
-    db_df = pd.read_excel('./files/db.xlsx', header=None, dtype=str)
+    # db_df = pd.read_excel('./files/db.xlsx', header=None, dtype=str)
 
     INPUT_ROW_LENGTH, INPUT_COL_LENGTH = input_df.shape
     DB_ROW_LENGTH, DB_COL_LENGTH = db_df.shape
